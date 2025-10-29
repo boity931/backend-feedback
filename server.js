@@ -7,6 +7,10 @@ const PORT = process.env.PORT || 10000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'https://feedback-fronted-2.onrender.com';
 
 const app = express();
+
+// =======================
+// Middleware
+// =======================
 app.use(cors({
   origin: FRONTEND_URL,
   methods: ['GET', 'POST'],
@@ -44,14 +48,14 @@ app.get('/', (req, res) => {
 
 // Add feedback
 app.post('/add', (req, res) => {
-  const { name, feedback } = req.body;
+  const { studentName, courseCode, comments, rating } = req.body;
 
-  if (!name || !feedback) {
-    return res.status(400).json({ error: 'Name and feedback required' });
+  if (!studentName || !comments || !courseCode || !rating) {
+    return res.status(400).json({ error: 'All fields are required' });
   }
 
-  const sql = 'INSERT INTO feedback_table (name, feedback) VALUES (?, ?)';
-  db.query(sql, [name, feedback], (err, result) => {
+  const sql = 'INSERT INTO feedback_table (studentName, courseCode, comments, rating) VALUES (?, ?, ?, ?)';
+  db.query(sql, [studentName, courseCode, comments, rating], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     res.status(201).json({ message: 'Feedback added!', id: result.insertId });
   });
@@ -72,6 +76,7 @@ app.get('/feedback', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 
