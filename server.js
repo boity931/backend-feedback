@@ -3,10 +3,15 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://feedback-fronted-2.onrender.com';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: FRONTEND_URL,
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 // =======================
@@ -29,10 +34,36 @@ db.connect(err => {
 });
 
 // =======================
-// Test route
+// Routes
 // =======================
+
+// Test route
 app.get('/', (req, res) => {
-  res.json({ message: 'Backend and DB connection successful!' });
+  res.json({ message: 'Backend is running and DB is connected!' });
+});
+
+// Add feedback
+app.post('/add', (req, res) => {
+  const { name, feedback } = req.body;
+
+  if (!name || !feedback) {
+    return res.status(400).json({ error: 'Name and feedback required' });
+  }
+
+  const sql = 'INSERT INTO feedback_table (name, feedback) VALUES (?, ?)';
+  db.query(sql, [name, feedback], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ message: 'Feedback added!', id: result.insertId });
+  });
+});
+
+// Get all feedback
+app.get('/feedback', (req, res) => {
+  const sql = 'SELECT * FROM feedback_table';
+  db.query(sql, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
 });
 
 // =======================
