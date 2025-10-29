@@ -13,9 +13,10 @@ const app = express();
 // =======================
 app.use(cors({
   origin: FRONTEND_URL,
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
+app.options('*', cors()); // handle preflight
 app.use(express.json());
 
 // =======================
@@ -50,7 +51,7 @@ app.get('/', (req, res) => {
 app.post('/add', (req, res) => {
   const { studentName, courseCode, comments, rating } = req.body;
 
-  if (!studentName || !comments || !courseCode || !rating) {
+  if (!studentName || !courseCode || !comments || !rating) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
@@ -70,12 +71,24 @@ app.get('/feedback', (req, res) => {
   });
 });
 
+// Delete feedback
+app.delete('/feedback/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = 'DELETE FROM feedback_table WHERE id = ?';
+  db.query(sql, [id], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Feedback not found' });
+    res.json({ message: 'Feedback deleted successfully' });
+  });
+});
+
 // =======================
 // Start server
 // =======================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 
