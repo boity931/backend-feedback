@@ -13,28 +13,31 @@ const app = express();
 // =======================
 app.use(cors({
   origin: FRONTEND_URL,
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE'],
   credentials: true
 }));
-app.options('*', cors()); // handle preflight
 app.use(express.json());
 
 // =======================
-// Database Connection
+// Database Connection Pool
 // =======================
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 });
 
-db.connect(err => {
+db.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Database connection failed:', err.message);
   } else {
-    console.log('✅ Database connected successfully!');
+    console.log('✅ Database pool connected successfully!');
+    connection.release();
   }
 });
 
@@ -51,7 +54,7 @@ app.get('/', (req, res) => {
 app.post('/add', (req, res) => {
   const { studentName, courseCode, comments, rating } = req.body;
 
-  if (!studentName || !courseCode || !comments || !rating) {
+  if (!studentName || !comments || !courseCode || !rating) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
@@ -71,14 +74,14 @@ app.get('/feedback', (req, res) => {
   });
 });
 
-// Delete feedback
+// Delete feedback by id
 app.delete('/feedback/:id', (req, res) => {
   const { id } = req.params;
   const sql = 'DELETE FROM feedback_table WHERE id = ?';
   db.query(sql, [id], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Feedback not found' });
-    res.json({ message: 'Feedback deleted successfully' });
+    res.json({ message: 'Feedback deleted successfully!' });
   });
 });
 
@@ -88,6 +91,7 @@ app.delete('/feedback/:id', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 
